@@ -18,14 +18,15 @@ class Recipe:
     def __init__(self, **kwargs):
         lazy_dataclass_init(self, **kwargs)
 
-
 @dataclass
 class MarketboardData:
     unitsForSale: int
     unitsSold: int
     averagePrice: float
-    currentAveragePrice: int
+    currentAveragePriceHQ: int
     recipe: Recipe
+    regularSaleVelocity: float
+    unitsForSale: int
 
     def __init__(self, **kwargs):
         lazy_dataclass_init(self, **kwargs)
@@ -51,5 +52,24 @@ def get_mb_infos(recipes: List[Recipe]):
 
 mb_infos = get_mb_infos(get_alc_recipes())
 
-# ordered = sorted(mb_infos, key=lambda info: info.averagePrice)
-print(sorted(mb_infos, key=lambda info: info.unitsSold * info.currentAveragePrice, reverse=True)[:5])
+
+
+max_unitsForSale = max(mb_infos, key=lambda info: info.unitsForSale).unitsForSale
+min_unitsForSale = min(mb_infos, key=lambda info: info.unitsForSale).unitsForSale
+
+max_regularSaleVelocity = max(mb_infos, key=lambda info: info.regularSaleVelocity).regularSaleVelocity
+min_regularSaleVelocity = min(mb_infos, key=lambda info: info.regularSaleVelocity).regularSaleVelocity
+
+max_currentAveragePriceHQ = max(mb_infos, key=lambda info: info.currentAveragePriceHQ).currentAveragePriceHQ
+min_currentAveragePriceHQ = min(mb_infos, key=lambda info: info.currentAveragePriceHQ).currentAveragePriceHQ
+
+def get_value_rank(value, min_value, max_value, reverse=False):
+    rank = (value - min_value) * 100 / (max_value - min_value)
+
+    return rank if not reverse else 100 - rank
+
+def get_rank(mbdata: MarketboardData):
+    return get_value_rank(mbdata.unitsForSale, min_unitsForSale, max_unitsForSale, True) * get_value_rank(mbdata.regularSaleVelocity, min_regularSaleVelocity, max_regularSaleVelocity) * get_value_rank(mbdata.currentAveragePriceHQ, min_currentAveragePriceHQ, max_currentAveragePriceHQ)
+
+for index, data in enumerate(sorted(mb_infos, key=get_rank, reverse=True)[:10]):
+    print(f'{index + 1}: {data.recipe.en} ({data.currentAveragePriceHQ})')

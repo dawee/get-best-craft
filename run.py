@@ -18,11 +18,15 @@ class Recipe:
     def __init__(self, **kwargs):
         lazy_dataclass_init(self, **kwargs)
 
+
 @dataclass
 class MarketboardData:
     unitsForSale: int
     unitsSold: int
     averagePrice: float
+    averagePriceHQ: float
+    minPriceHQ: float
+    hqSaleVelocity: float
     currentAveragePriceHQ: int
     recipe: Recipe
     regularSaleVelocity: float
@@ -57,19 +61,21 @@ mb_infos = get_mb_infos(get_alc_recipes())
 max_unitsForSale = max(mb_infos, key=lambda info: info.unitsForSale).unitsForSale
 min_unitsForSale = min(mb_infos, key=lambda info: info.unitsForSale).unitsForSale
 
-max_regularSaleVelocity = max(mb_infos, key=lambda info: info.regularSaleVelocity).regularSaleVelocity
-min_regularSaleVelocity = min(mb_infos, key=lambda info: info.regularSaleVelocity).regularSaleVelocity
+max_hqSaleVelocity = max(mb_infos, key=lambda info: info.hqSaleVelocity).hqSaleVelocity
+min_hqSaleVelocity = min(mb_infos, key=lambda info: info.hqSaleVelocity).hqSaleVelocity
 
 max_currentAveragePriceHQ = max(mb_infos, key=lambda info: info.currentAveragePriceHQ).currentAveragePriceHQ
 min_currentAveragePriceHQ = min(mb_infos, key=lambda info: info.currentAveragePriceHQ).currentAveragePriceHQ
 
-def get_value_rank(value, min_value, max_value, reverse=False):
-    rank = (value - min_value) * 100 / (max_value - min_value)
+max_minPriceHQ = max(mb_infos, key=lambda info: info.minPriceHQ).minPriceHQ
+min_minPriceHQ = min(mb_infos, key=lambda info: info.minPriceHQ).minPriceHQ
 
-    return rank if not reverse else 100 - rank
+
+def get_value_rank(value, min_value, max_value):
+    return (value - min_value) * 100 / (max_value - min_value)
 
 def get_rank(mbdata: MarketboardData):
-    return get_value_rank(mbdata.unitsForSale, min_unitsForSale, max_unitsForSale, True) * get_value_rank(mbdata.regularSaleVelocity, min_regularSaleVelocity, max_regularSaleVelocity) * get_value_rank(mbdata.currentAveragePriceHQ, min_currentAveragePriceHQ, max_currentAveragePriceHQ)
+    return get_value_rank(mbdata.hqSaleVelocity, min_hqSaleVelocity, max_hqSaleVelocity) * get_value_rank(mbdata.minPriceHQ, min_minPriceHQ, max_minPriceHQ) / max(get_value_rank(mbdata.unitsForSale, min_unitsForSale, max_unitsForSale), 1)
 
 for index, data in enumerate(sorted(mb_infos, key=get_rank, reverse=True)[:10]):
-    print(f'{index + 1}: {data.recipe.en} ({data.currentAveragePriceHQ})')
+    print(f'{index + 1}: [{data.recipe.itemId}]{data.recipe.en} (minPriceHQ: {data.minPriceHQ}, selling: {data.unitsForSale}, hqSaleVelocity: {data.hqSaleVelocity})')
